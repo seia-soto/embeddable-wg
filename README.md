@@ -1,5 +1,7 @@
 # Embeddable-WG bindings for Node.JS
 
+[![Release](https://github.com/seia-soto/embeddable-wg/actions/workflows/build.yml/badge.svg)](https://github.com/seia-soto/embeddable-wg/actions/workflows/build.yml)
+
 This package includes bindings of embeddable-wg-library in wireguard-tools library for efficient calls to set up WireGuard devices.
 
 ## Notes
