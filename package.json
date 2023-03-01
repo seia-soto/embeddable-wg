@@ -5,6 +5,7 @@
   "main": "out/index.js",
   "type": "module",
   "scripts": {
+    "install": "node-pre-gyp install --fallback-to-build",
     "build": "pnpm build:wrapper && pnpm build:binding",
     "build:binding": "node-pre-gyp rebuild",
     "build:wrapper": "tsc -p ./tsconfig.build.json"
