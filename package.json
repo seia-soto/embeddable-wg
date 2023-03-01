@@ -1,6 +1,6 @@
 {
   "name": "embeddable-wg",
-  "version": "0.0.1-c",
+  "version": "0.0.1-d",
   "description": "This package includes bindings of embeddable-wg-library in wireguard-tools library for efficient calls to set up WireGuard devices.",
   "main": "out/index.js",
   "type": "module",
