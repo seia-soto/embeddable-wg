@@ -1,2 +1,5 @@
-/externs
-!/externs/contrib/embeddable-wg-library
+/.github
+/externs/**/*
+/build*
+/lib
+!/externs/wireguard-tools/contrib/embeddable-wg-library/**/*
