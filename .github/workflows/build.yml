@@ -1,0 +1,130 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+env:
+  npm_config_build_from_source: true
+
+jobs:
+  publish:
+    name: Publish package
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: true
+    - uses: pnpm/action-setup@v2
+      with:
+        version: 7
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        cache: pnpm
+        node-version: 18
+        registry-url: https://registry.npmjs.org/
+    - name: Install dependencies
+      run: pnpm install
+    - name: Publish to NPM
+      run: pnpm publish
+      env:
+        NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: true
+    - uses: pnpm/action-setup@v2
+      with:
+        version: 7
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        cache: pnpm
+        node-version: 18
+        registry-url: https://registry.npmjs.org/
+    - name: Install dependencies
+      run: pnpm install
+    - name: Package artifacts
+      run: pnpm build && pnpm node-pre-gyp package
+    - name: Upload to Release
+      uses: csexton/release-asset-action@v2
+      with:
+        pattern: build/stage/**/wgbinding*.tar.gz
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        release-url: ${{github.event.release.upload_url}}
+  build-alpine:
+    name: Build on Alpine Linux
+    runs-on: ubuntu-latest
+    container:
+      image: node:18-alpine
+    steps:
+      - name: Install build dependencies
+        run: apk add make g++ python3 git
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install dependencies
+        run: pnpm install
+      - name: Package artifacts
+        run: pnpm build && pnpm node-pre-gyp package
+      - name: Upload to Release
+        uses: csexton/release-asset-action@v2
+        with:
+          pattern: build/stage/**/wgbinding*.tar.gz
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          release-url: ${{github.event.release.upload_url}}
+  build-arm:
+    name: Build on arm64
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: aarch64
+            distro: ubuntu20.04
+          - arch: aarch64
+            distro: alpine_latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: true
+    - uses: uraimo/run-on-arch-action@v2.2.0
+      name: Package artifacts
+      id: build
+      with:
+        arch: ${{matrix.arch}}
+        distro: ${{matrix.distro}}
+        setup: mkdir -p "${PWD}/artifacts"
+        dockerRunArgs: --volume "${PWD}:/source"
+        env: |
+          npm_config_build_from_source: true
+        install: |
+          case "${{matrix.distro}}" in
+            ubuntu*|jessie|stretch|buster)
+              apt install -y curl
+              curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+              apt install -y make g++ python nodejs
+              npm i -g pnpm
+              ;;
+            alpine*)
+              apk add --update make g++ python3
+              apk add --no-cache --repository https://dl-cdn.alpinelinux.org/alpine/v3.13/main/ nodejs~=18 npm~=18
+              npm i -g pnpm
+              ;;
+          esac
+        run: |
+          cd /source
+          pnpm install
+          pnpm build && pnpm node-pre-gyp package
+    - name: Upload to Release
+      uses: csexton/release-asset-action@v2
+      with:
+        pattern: build/stage/**/wgbinding*.tar.gz
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        release-url: ${{github.event.release.upload_url}}
