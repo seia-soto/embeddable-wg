@@ -58,30 +58,6 @@ jobs:
         pattern: build/stage/**/wgbinding*.tar.gz
         github-token: ${{secrets.GITHUB_TOKEN}}
         release-url: ${{github.event.release.upload_url}}
-  build-alpine:
-    name: Build on Alpine Linux
-    runs-on: ubuntu-latest
-    container:
-      image: node:18-alpine
-    steps:
-      - name: Install build dependencies
-        run: apk add make g++ python3 git
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Install package manager
-        run: npm i -g pnpm
-      - name: Install dependencies
-        run: pnpm install
-      - name: Package artifacts
-        run: pnpm build && pnpm node-pre-gyp package
-      - name: Upload to Release
-        uses: csexton/release-asset-action@v2
-        with:
-          pattern: build/stage/**/wgbinding*.tar.gz
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          release-url: ${{github.event.release.upload_url}}
   build-arm:
     name: Build on arm64
     runs-on: ubuntu-latest
@@ -90,8 +66,6 @@ jobs:
         include:
           - arch: aarch64
             distro: ubuntu20.04
-          - arch: aarch64
-            distro: alpine_latest
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -118,7 +92,7 @@ jobs:
               ;;
             alpine*)
               apk add --update make g++ python3
-              apk add --no-cache --repository https://dl-cdn.alpinelinux.org/alpine/v3.13/main/ nodejs~=18 npm~=18
+              apk add --no-cache nodejs~=18 npm~=18
               npm i -g pnpm
               ;;
           esac
