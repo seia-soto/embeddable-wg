@@ -818,12 +818,21 @@ static napi_value get_interface_address(napi_env env, const napi_callback_info i
     }
 
     napi_value entry_value, family_value, ip_value;
-    NAPI_CALL(env, napi_create_object(env, &entry_value));
-    NAPI_CALL(env, napi_create_string_utf8(env, host, NAPI_AUTO_LENGTH, &ip_value));
-    NAPI_CALL(env, napi_create_uint32(env, ifa->ifa_addr->sa_family, &family_value));
-    NAPI_CALL(env, napi_set_named_property(env, entry_value, "family", family_value));
-    NAPI_CALL(env, napi_set_named_property(env, entry_value, "ip", ip_value));
-    NAPI_CALL(env, napi_set_element(env, ifaddrs_value, index++, entry_value));
+    if (
+      napi_create_object(env, &entry_value) +
+      napi_create_string_utf8(env, host, NAPI_AUTO_LENGTH, &ip_value) +
+      napi_create_uint32(env, ifa->ifa_addr->sa_family, &family_value) +
+      napi_set_named_property(env, entry_value, "family", family_value) +
+      napi_set_named_property(env, entry_value, "ip", ip_value) +
+      napi_set_element(env, ifaddrs_value, index++, entry_value)
+      != (napi_ok * 6)
+    )
+    {
+      free(device_name);
+      freeifaddrs(ifaddr);
+
+      return NULL;
+    }
   }
 
   free(device_name);
