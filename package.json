@@ -15,6 +15,14 @@
   ],
   "author": "HoJeong Go <seia@outlook.kr>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seia-soto/embeddable-wg"
+  },
+  "bugs": {
+    "email": "seia@outlook.kr",
+    "url": "https://github.com/seia-soto/embeddable-wg/issues"
+  },
   "binary": {
     "module_name": "wgbinding",
     "module_path": "./lib/binding/napi-v{napi_build_version}",
