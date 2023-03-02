@@ -12,17 +12,112 @@ This package includes bindings of embeddable-wg-library in wireguard-tools libra
 
 ## Usage
 
+Please, use class wrappers for easy use.
+
 ### Bindings
 
 You can import the binding object via `import {wg} from 'embeddable-wg';`.
 
-See [binding definition](/types/wg.d.ts) for full usage.
+```typescript
+export type AddressFamily = Binding['AF_INET'] | Binding['AF_INET6'];
+
+export type InterfaceAddress = {
+	family: AddressFamily;
+	ip: string;
+};
+
+export type WireguardAllowedIp = {
+	addr: string;
+	family: AddressFamily;
+	cidr: number;
+};
+
+export type WireguardPeer = {
+	flags: number;
+	publicKey: string;
+	presharedKey: string;
+	endpoint: string;
+	persistentKeepaliveInterval: number;
+	allowedIps: WireguardAllowedIp[];
+};
+
+export type WireguardDevice = {
+	name: string;
+	ifindex: number;
+	flags: number;
+	publicKey: string;
+	privateKey: string;
+	fwmark: number;
+	listenPort: number;
+	peers: WireguardPeer[];
+};
+
+export type Binding = {
+	getDevice: (deviceName: string) => WireguardDevice;
+	setDevice: (device: WireguardDevice) => void;
+	addDevice: (deviceName: string) => void;
+	removeDevice: (deviceName: string) => void;
+	listDeviceNames: () => string[];
+	generatePublicKey: (privateKey: string) => string;
+	generatePrivateKey: () => string;
+	generatePresharedKey: () => string;
+	getInterfaceAddress: (deviceName: string) => InterfaceAddress[];
+	setInterfaceAddress: (deviceName: string, address: InterfaceAddress) => void;
+	WGDEVICE_REPLACE_PEERS: number;
+	WGDEVICE_HAS_PRIVATE_KEY: number;
+	WGDEVICE_HAS_PUBLIC_KEY: number;
+	WGDEVICE_HAS_LISTEN_PORT: number;
+	WGDEVICE_HAS_FWMARK: number;
+	WGPEER_REMOVE_ME: number;
+	WGPEER_REPLACE_ALLOWEDIPS: number;
+	WGPEER_HAS_PUBLIC_KEY: number;
+	WGPEER_HAS_PRESHARED_KEY: number;
+	WGPEER_HAS_PERSISTENT_KEEPALIVE_INTERVAL: number;
+	AF_INET: number;
+	AF_INET6: number;
+};
+```
+
+#### Applying modifications
+
+If you're going to modify the device or peer, you should set proper flags property before applying any of modifications.
+For example, you'll need to set `WGDEVICE_HAS_PUBLIC_KEY` if you want to apply changes on object got from `wg.getDevice` method.
+
+The way to set flag is easy as it's just simple bitwise system.
+
+```typescript
+import {wg} from 'embeddable-wg';
+
+const dev = wg.getDevice('wgtest0');
+
+dev.privateKey = wg.generatePrivateKey();
+dev.publicKey = wg.generatePublicKey(dev.privateKey);
+
+dev.flags |= wg.WGDEVICE_HAS_PRIVATE_KEY;
+dev.flags |= wg.WGDEVICE_HAS_PUBLIC_KEY;
+```
+
+The class wrapper automates this.
+However, it's safe to use binding directly if you want to implement more efficient method.
+
+#### Address families and IP format
+
+The address family describes what type of the IP address you'll use.
+We provide `AF_INET` and `AF_INET6` from the binding source instead of hard-coding the values.
+Each of them refers IPv4 and IPv6.
+
+```typescript
+import {wg} from 'embeddable-wg'
+
+const ia = {
+    "ip": "10.0.0.1",
+    "family": wg.AF_INET,
+}
+```
 
 ### Class wrappers
 
 We also provide class wrappers for easy use.
-
-See [example.js](/example.js) for example usage.
 
 ```typescript
 import { type Binding, type WireguardAllowedIp, type WireguardPeer, type WireguardDevice, type AddressFamily } from '../types/wg.js';
@@ -65,3 +160,15 @@ export declare class WgDevice {
 }
 //# sourceMappingURL=index.d.ts.map
 ```
+
+#### Initialization
+
+To initialize the class wrappers, you'll simply need to get the `WireguardDevice` and `WireguardPeer` object from native binding.
+
+```typescript
+import {wg, WgDevice} from 'embeddable-wg';
+
+const dev = new WgDevice(wg.getDevice(targetDevName));
+```
+
+After the initialization, the flags property will be handled automatically while using methods from the class wrapper.
