@@ -879,32 +879,37 @@ static napi_value set_interface_address(napi_env env, const napi_callback_info i
 
   uint32_t family;
   char *device_name, *ip;
-  NAPI_CALL(env, napi_get_value_uint32(env, family_props, &family));
-  NAPI_CALL(env, napi_utils_get_value_string(env, args[0], &device_name));
-  NAPI_CALL(env, napi_utils_get_value_string(env, ip_props, &ip));
-
   union
   {
     struct in_addr v4;
     struct in6_addr v6;
   } addr;
+  NAPI_CALL(env, napi_get_value_uint32(env, family_props, &family));
+  NAPI_CALL(env, napi_utils_get_value_string(env, args[0], &device_name));
+  NAPI_CALL(env, napi_utils_get_value_string(env, ip_props, &ip));
 
   if (inet_pton(family, ip, &addr) != 1)
   {
+    free(ip);
+    free(device_name);
+
     napi_throw_type_error(env, EWB_AF_UNSPEC, "Failed to validate the address family! Please, give a valid ip address.");
-    goto clean;
+    return NULL;
   }
+
+  free(ip);
 
   int sockfd = socket(family, SOCK_DGRAM, 0);
   if (sockfd == -1)
   {
     napi_throw_error(env, EWB_SOC_CALLFAIL, "Failed to open socket for interface!");
-    goto clean;
+    return NULL;
   }
 
   // The warning here is expected, but will not remove for the future debug and improvement.
   struct ifreq ifr;
   strncpy(ifr.ifr_name, device_name, IFNAMSIZ);
+  free(device_name);
 
   if (family == AF_INET)
   {
@@ -922,16 +927,10 @@ static napi_value set_interface_address(napi_env env, const napi_callback_info i
     napi_throw_error(env, EWB_SOC_CALLFAIL, "SIOCSIFADDR");
 
     close(sockfd);
-    goto clean;
+    return NULL;
   }
 
   close(sockfd);
-  return NULL;
-
-clean:
-  free(device_name);
-  free(ip);
-
   return NULL;
 }
 
