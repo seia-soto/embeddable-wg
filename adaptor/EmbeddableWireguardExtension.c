@@ -964,7 +964,6 @@ static napi_value init(napi_env env, napi_value exports)
   NAPI_CALL(env, napi_define_properties(env, exports, 1, &set_interface_address_descriptor));
   NAPI_CALL(env, napi_utils_define_uint32_value(env, exports, "WGDEVICE_REPLACE_PEERS", WGDEVICE_REPLACE_PEERS));
   NAPI_CALL(env, napi_utils_define_uint32_value(env, exports, "WGDEVICE_HAS_PRIVATE_KEY", WGDEVICE_HAS_PRIVATE_KEY));
-  NAPI_CALL(env, napi_utils_define_uint32_value(env, exports, "WGDEVICE_HAS_PRIVATE_KEY", WGDEVICE_HAS_PRIVATE_KEY));
   NAPI_CALL(env, napi_utils_define_uint32_value(env, exports, "WGDEVICE_HAS_PUBLIC_KEY", WGDEVICE_HAS_PUBLIC_KEY));
   NAPI_CALL(env, napi_utils_define_uint32_value(env, exports, "WGDEVICE_HAS_LISTEN_PORT", WGDEVICE_HAS_LISTEN_PORT));
   NAPI_CALL(env, napi_utils_define_uint32_value(env, exports, "WGDEVICE_HAS_FWMARK", WGDEVICE_HAS_FWMARK));
