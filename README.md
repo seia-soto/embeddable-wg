@@ -4,19 +4,29 @@
 
 This package includes bindings of embeddable-wg-library in wireguard-tools library for efficient calls to set up WireGuard devices.
 
-## Notes
+See [Official WireGuard website](https://wireguard.com) and [wireguard-tools/contrib/embeddable-wg-library](https://git.zx2c4.com/wireguard-tools/tree/contrib/embeddable-wg-library) for more information.
 
-- This module requires you to be on Linux to be compiled.
-- This module is not production-ready as there can be some memory-leak issues.
-- This module is written in ESM format and I will no support or convert it into CJS format.
+We support **g-libc and musl-libc based x86_64 and aarch64 systems on Linux**, and controls network interface via `ioctl`.
+We provide the [direct bindings](#bindings) to embeddable-wg-library and [class wrappers](#class-wrappers) on it for easy use.
 
-## Usage
+## Errors
 
-Please, use class wrappers for easy use.
+The expected errors are defined in [constants.h](adaptor/constants.h).
 
-### Bindings
+```c
+#define EWB_AF_UNSPEC "EWB_AF_UNSPEC"       // If the ip address format is not valid ipv4 or ipv6.
+#define EWB_AI_UNFORMAT "EWB_AI_UNFORMAT"   // If the value is not in valid format: for example, peer->endpoint takes `ip:port` schema.
+#define EWB_OBJ_UNSPEC "EWB_OBJ_UNSPEC"     // If we failed to unwrap napi_value object into wireguard structs.
+#define EWB_ARG_UNSPEC "EWB_ARG_UNSPEC"     // If the argument given is not valid.
+#define EWB_LIB_CALLFAIL "EWB_LIB_CALLFAIL" // If we failed to call wireguard library functions.
+#define EWB_NNA_CALLFAIL "EWB_NNA_CALLFAIL" // If we failed to call napi library functions.
+#define EWB_SOC_CALLFAIL "EWB_SOC_CALLFAIL" // If we failed to call socket to kernel or related system calls.
+```
+
+## Bindings
 
 You can import the binding object via `import {wg} from 'embeddable-wg';`.
+For modification of the device and interface, see [Applying modifications](#applying-modifications) about doing bitwise operations.
 
 ```typescript
 export type AddressFamily = Binding['AF_INET'] | Binding['AF_INET6'];
@@ -78,7 +88,7 @@ export type Binding = {
 };
 ```
 
-#### Applying modifications
+### Applying modifications
 
 If you're going to modify the device or peer, you should set proper flags property before applying any of modifications.
 For example, you'll need to set `WGDEVICE_HAS_PUBLIC_KEY` if you want to apply changes on object got from `wg.getDevice` method.
@@ -100,7 +110,7 @@ dev.flags |= wg.WGDEVICE_HAS_PUBLIC_KEY;
 The class wrapper automates this.
 However, it's safe to use binding directly if you want to implement more efficient method.
 
-#### Address families and IP format
+### Address families and IP format
 
 The address family describes what type of the IP address you'll use.
 We provide `AF_INET` and `AF_INET6` from the binding source instead of hard-coding the values.
@@ -115,9 +125,10 @@ const ia = {
 }
 ```
 
-### Class wrappers
+## Class wrappers
 
 We also provide class wrappers for easy use.
+The main purpose of class wrappers are to operate bitwise on `flags` property automatically when matching method called.
 
 ```typescript
 import { type Binding, type WireguardAllowedIp, type WireguardPeer, type WireguardDevice, type AddressFamily } from '../types/wg.js';
@@ -132,9 +143,33 @@ export declare class WgPeer {
     allowedIps: WireguardAllowedIp[];
     private readonly device;
     constructor(device: WgDevice, peer: WireguardPeer);
+    /**
+     * Sets allowed ips for the peer.
+     * Note that this method completely replaces allowedIps value for the peer.
+     * @example peer.setAllowedIps([{family: wg.AF_INET, addr: '10.0.0.2', cidr: 32}]);
+     * @param allowedIps The array of allowed ips.
+     * @returns Returns `this`.
+     */
     setAllowedIps(allowedIps: WireguardAllowedIp[]): this;
+    /**
+     * Sets public key for the peer.
+     * You can generate the key via `wg.generatePublicKey(peer.presharedKey);`.
+     * @example peer.setPublicKey(wg.generatePublicKey(peer.presharedKey));
+     * @param key The public key in base64 format.
+     * @returns Returns `this`.
+     */
     setPublicKey(key: string): this;
+    /**
+     * Sets preshared key for the peer.
+     * You can generate the key via `wg.generatePresharedKey();`.
+     * @example peer.setPresharedKey(wg.generatePresharedKey());
+     * @param key The preshared key in base64 format.
+     * @returns Returns `this`.
+     */
     setPresharedKey(key: string): this;
+    /**
+     * Removes the peer from the device.
+     */
     remove(): void;
     private update;
 }
@@ -148,20 +183,63 @@ export declare class WgDevice {
     listenPort: number;
     peers: WgPeer[];
     constructor(device: WireguardDevice);
+    /**
+     * Gets the interface address of the device interface.
+     * @returns The array of interface addresses.
+     */
     getInterfaceAddress(): import("../types/wg.js").InterfaceAddress[];
+    /**
+     * Sets the interface address of the device interface.
+     * @example device.setInterfaceAddress(wg.AF_INET, '10.0.0.1');
+     * @param family The address family; should be wg.AF_INET or wg.AF_INET6.
+     * @param ip The ip address without any additional information; such as protocol.
+     * @returns Returns `this`.
+     */
     setInterfaceAddress(family: AddressFamily, ip: string): this;
+    /**
+     * Sets the public key for the device.
+     * @example device.setPublicKey(wg.generatePrivateKey(device.publicKey));
+     * @param key The public key in base64 format.
+     * @returns Returns `this`.
+     */
     setPublicKey(key: string): this;
+    /**
+     * Sets the private key for the device.
+     * @example device.setPrivateKey(wg.generatePrivateKey());
+     * @param key The private key in base64 format.
+     * @returns Returns `this`.
+     */
     setPrivateKey(key: string): this;
+    /**
+     * Sets the `fwmark` for the device.
+     * WARNING; `fwmark` is used to route the packet to specific interface in Linux netfilter, and can lead to unexpected result.
+     * @param fwmark The fwmark value.
+     * @returns Returns `this`.
+     */
     setFwmark(fwmark: number): this;
+    /**
+     * Sets the port number for the device.
+     * @example device.setListenPort(8888);
+     * @param port The port number.
+     * @returns Returns `this`.
+     */
     setListenPort(port: number): this;
+    /**
+     * Adds a peer to the device.
+     * @param source The peer source.
+     * @returns Returns `this`.
+     */
     addPeer(source: WireguardPeer): this;
+    /**
+     * Removes the device.
+     */
     remove(): void;
     private update;
 }
 //# sourceMappingURL=index.d.ts.map
 ```
 
-#### Initialization
+### Initialization
 
 To initialize the class wrappers, you'll simply need to get the `WireguardDevice` and `WireguardPeer` object from native binding.
 
