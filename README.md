@@ -2,11 +2,11 @@
 
 [![Release](https://github.com/seia-soto/embeddable-wg/actions/workflows/build.yml/badge.svg)](https://github.com/seia-soto/embeddable-wg/actions/workflows/build.yml)
 
-This package includes bindings of embeddable-wg-library in wireguard-tools library for efficient calls to set up WireGuard devices.
+This library includes bindings of the embeddable-wg-library, allowing for efficient calls to set up WireGuard devices.
 
 See [Official WireGuard website](https://wireguard.com) and [wireguard-tools/contrib/embeddable-wg-library](https://git.zx2c4.com/wireguard-tools/tree/contrib/embeddable-wg-library) for more information.
 
-We support **g-libc and musl-libc based x86_64 and aarch64 systems on Linux**, and controls network interface via `ioctl`.
+We support **glibc- and musl-libc-based x86_64 and aarch64 systems on Linux** and control the network interface via `ioctl`.
 We provide the [direct bindings](#bindings) to embeddable-wg-library and [class wrappers](#class-wrappers) on it for easy use.
 
 ## Errors
@@ -26,7 +26,7 @@ The expected errors are defined in [constants.h](adaptor/constants.h).
 ## Bindings
 
 You can import the binding object via `import {wg} from 'embeddable-wg';`.
-For modification of the device and interface, see [Applying modifications](#applying-modifications) about doing bitwise operations.
+For modification of the device and interface, refer to [Applying modifications](#applying-modifications) for instructions on performing automatic bitwise operations.
 
 ```typescript
 export type AddressFamily = Binding['AF_INET'] | Binding['AF_INET6'];
@@ -90,10 +90,9 @@ export type Binding = {
 
 ### Applying modifications
 
-If you're going to modify the device or peer, you should set proper flags property before applying any of modifications.
-For example, you'll need to set `WGDEVICE_HAS_PUBLIC_KEY` if you want to apply changes on object got from `wg.getDevice` method.
-
-The way to set flag is easy as it's just simple bitwise system.
+If you plan to modify a device or peer, it is important to set the proper flags property before applying any modifications.
+For example, if you want to apply changes to the `publicKey` property of an object retrieved from the `wg.getDevice` method, you will need to set the `WGDEVICE_HAS_PUBLIC_KEY` flag.
+Setting flags is same as it uses a simple bitwise system.
 
 ```typescript
 import {wg} from 'embeddable-wg';
@@ -107,14 +106,13 @@ dev.flags |= wg.WGDEVICE_HAS_PRIVATE_KEY;
 dev.flags |= wg.WGDEVICE_HAS_PUBLIC_KEY;
 ```
 
-The class wrapper automates this.
-However, it's safe to use binding directly if you want to implement more efficient method.
+While the class wrapper automates this process, it is also safe to use the binding directly if you need to implement a more efficient method.
 
 ### Address families and IP format
 
-The address family describes what type of the IP address you'll use.
+The address family describes the type of IP address that will be used.
 We provide `AF_INET` and `AF_INET6` from the binding source instead of hard-coding the values.
-Each of them refers IPv4 and IPv6.
+Each of these constants refers to IPv4 and IPv6, respectively.
 
 ```typescript
 import {wg} from 'embeddable-wg'
@@ -128,7 +126,7 @@ const ia = {
 ## Class wrappers
 
 We also provide class wrappers for easy use.
-The main purpose of class wrappers are to operate bitwise on `flags` property automatically when matching method called.
+The main purpose of these class wrappers is to operate on the flags property automatically when a matching method is called.
 
 ```typescript
 import { type Binding, type WireguardAllowedIp, type WireguardPeer, type WireguardDevice, type AddressFamily } from '../types/wg.js';
@@ -241,7 +239,7 @@ export declare class WgDevice {
 
 ### Initialization
 
-To initialize the class wrappers, you'll simply need to get the `WireguardDevice` and `WireguardPeer` object from native binding.
+To initialize the class wrappers, you'll simply need to retrieve the `WireguardDevice` and `WireguardPeer` object from native binding.
 
 ```typescript
 import {wg, WgDevice} from 'embeddable-wg';
@@ -249,4 +247,4 @@ import {wg, WgDevice} from 'embeddable-wg';
 const dev = new WgDevice(wg.getDevice(targetDevName));
 ```
 
-After the initialization, the flags property will be handled automatically while using methods from the class wrapper.
+Once initialized, the flags property will be handled automatically when using methods from the class wrapper.
